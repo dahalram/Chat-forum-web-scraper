@@ -1,0 +1,9 @@
+1. Each link has a story article and then comments below. 
+2. The comments can be multiple pages long. 
+3. The article is inside the <article> tab
+
+4. Example: 
+Post ID,Thread ID,User ID,User Name,Post Date+Time,Post Title,Post Body,Quoted Posts,Quoted Text,Liked By
+
+378466,24230,10070,Mwan mpambanaji,18th February 2009 19:43,Re: Nataka kugombea urais wa tz 2010,"Naona kwanza hujiamini pia huna ajenda,wala maono(vision)cha msingi ungekuja na nini utafanya then ushauriwe na sio bla bla tu",,,
+
