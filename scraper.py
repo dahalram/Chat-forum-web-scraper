@@ -44,7 +44,6 @@ for text in parsed_docs.findAll('li'):
 		pass
 	timeStamps.append(datetime)
 
-
 	# Likes Received
 	likeText = str(text.find('dl', {'class':'brLikeReceived'}))
 	likeText = likeText.split('<span>', 1)[-1]
@@ -64,8 +63,16 @@ for text in parsed_docs.findAll('li'):
 
 	quotedTexts.append(quotedText)
 
+	# TODO
+	# threadId
+	# userId 
+	# userName
+	# quotedPosts 
+
 
 	print "****************************\n\n"
+
+# print postIds, timeStamps, likes
 
 
 def getPostId(text):
