@@ -4,6 +4,14 @@ import re
 import string
 from bs4 import BeautifulSoup
 
+
+## Check this out first https://www.jamiiforums.com/robots.txt
+## http://monzool.net/blog/2007/10/15/html-parsing-with-beautiful-soup/
+
+
+## TODO Use proxy to change the IP address
+## Pause for a specific amount of time after a number of iterations
+
 # URL to scrape from
 web_link = "https://www.jamiiforums.com/threads/teach-individuals-and-not-the-class.1202358/"
 
