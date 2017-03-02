@@ -63,6 +63,15 @@ for text in parsed_docs.findAll('li'):
 
 	quotedTexts.append(quotedText)
 
+	# userID
+	userid = text.findAll('a')
+	userID = userid.get("href")
+
+	# userName
+	username = str(text.find('h3', {'class':'userText'}))
+	username = username.split()
+
+
 	# TODO
 	# threadId
 	# userId 
