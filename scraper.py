@@ -3,6 +3,8 @@ import urllib2
 import re
 import string
 from bs4 import BeautifulSoup
+import random
+import requests
 
 
 ## Check this out first https://www.jamiiforums.com/robots.txt
@@ -82,9 +84,9 @@ for text in parsed_docs.findAll('li'):
 
 	# TODO
 	# threadId
-	# userId 
+	# userId
 	# userName
-	# quotedPosts 
+	# quotedPosts
 
 
 	print "****************************\n\n"
@@ -139,4 +141,3 @@ def getLikedBy(text):
 # f = open('out.txt', 'w')
 # f.write(t2)
 # f.close()
-
