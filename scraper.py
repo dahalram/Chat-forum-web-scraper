@@ -1,5 +1,7 @@
 import sys
-import urllib2
+# import urllib2
+import urllib.request
+import lxml
 import re
 import string
 from bs4 import BeautifulSoup
@@ -15,7 +17,8 @@ from bs4 import BeautifulSoup
 # URL to scrape from
 web_link = "https://www.jamiiforums.com/threads/teach-individuals-and-not-the-class.1202358/"
 
-page = urllib2.urlopen(web_link)
+# page = urllib2.urlopen(web_link)
+page = urllib.request.urlopen(web_link)
 
 # To see the webpage results
 # print page.read()
@@ -23,6 +26,8 @@ page = urllib2.urlopen(web_link)
 
 # Parse the html in the page
 parsed_docs = BeautifulSoup(page, "lxml")
+
+print (parsed_docs)
 
 # The message content is inside the div with class 'messageContent'
 
@@ -73,7 +78,7 @@ for text in parsed_docs.findAll('li'):
 
 	# userID
 	userid = text.findAll('a')
-	userID = userid.get("href")
+	# userID = userid.get("href")
 
 	# userName
 	username = str(text.find('h3', {'class':'userText'}))
@@ -87,7 +92,8 @@ for text in parsed_docs.findAll('li'):
 	# quotedPosts 
 
 
-	print "****************************\n\n"
+	# print "****************************\n\n"
+	print ("****************************\n\n")
 
 # print postIds, timeStamps, likes
 
