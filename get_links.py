@@ -59,12 +59,12 @@ headers = {
         "User-Agent" : ua
     }
 
-def findlinks_ahref(url, level, next):
+def findlinks_ahref(url, level):
     ret = []
     r = requests.get(url, proxies=proxy,
         params=params, headers=headers)
     response = BeautifulSoup(r.content, 'lxml')
-    secs = response.findAll('li')
+    secs = response.findAll('li') # use response.findAll('span', {'class': 'items'})
     c_ah = 0
     for i in range(0, len(secs)):
         strg = ""
@@ -80,14 +80,16 @@ def findlinks_ahref(url, level, next):
                     if link:
                         if ahrefs[level][1] in link:
                             ret.append(web_link3+link)
-    # items = response.findAll('span')
-    # for item in items:
-
+    pages = []
+    spans = response.findAll('span', {'class': 'items'})
+    for span in spans:
+        # print(span)
+        pass
     return ret
 
 # add proxy and scrape more
 # scrape into other pages too
-discussions = findlinks_ahref(web_link3, 0, True)
+discussions = findlinks_ahref(web_link3, 0)
 threads = findlinks_ahref(discussions[0], 1)
 
 
@@ -99,15 +101,16 @@ postBody = []
 quotedTexts = []
 # load proxy
 count = 0
-two = 0
+five = 0
+
 for thread in threads:
-    if two == 2:
+    if five == 5:
         break;
-    if count == 20:
+    if count == 40:
         proxy = random.choice(ps)
         ua = random.choice(uas)  # select a random user agent
         count = 0
-        two += 1
+        five += 1
     count += 1
     headers = {
         "Connection" : "close",  # another way to cover tracks
@@ -117,6 +120,7 @@ for thread in threads:
     r = requests.get(thread, proxies=proxy,
         params=params, headers=headers)
     response = BeautifulSoup(r.content, 'lxml')
+    out = open('dump.txt', 'w')
     for text in response.findAll('li'):
         # postid
         postId = text.get('id')
@@ -152,7 +156,9 @@ for thread in threads:
         # userName
         username = str(text.find('h3', {'class':'userText'}))
         username = username.split()
-    print(postBody)
+        out.write(message.decode("utf-8"))
+        out.write("\n\n\n")
+    print(postBody[0])
 
 # //*[@id="post-441629"]
 
