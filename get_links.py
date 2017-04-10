@@ -3,6 +3,11 @@ import requests
 
 from bs4 import BeautifulSoup
 
+##########################################################################################
+
+####### this portion is for getting links to scrape with ##########################
+
+
 USER_AGENTS_FILE = 'user_agents.txt'
 PROXY_FILE = "list_of_proxies.txt"
 
@@ -43,12 +48,6 @@ web_link2 = "https://www.us-proxy.org"
 web_link3 = "https://www.jamiiforums.com/"
 
 params = {"q" : "London,uk"}
-
-# main post: "messageinfo primarycontent"
-# li that contain ahrefs
-ahrefs = [["node forum level_", ""], ["discussionListItem visible", "threads"], 
-            ["messageInfo primaryContent", "message"]]
-
 ps = LoadProxy()
 # load user agents and set headers
 uas = LoadUserAgents()
@@ -59,6 +58,12 @@ headers = {
         "User-Agent" : ua
     }
 
+# ahrefs contains div classes that we want to scrape for a given level
+ahrefs = [["node forum level_", ""], ["discussionListItem visible", "threads"], 
+            ["messageInfo primaryContent", "message"]]
+# level 0 is landing page, jammiforum.com
+# level 1 is the page of threads
+# level 2 is the page of actual posts
 def findlinks_ahref(url, level):
     ret = []
     r = requests.get(url, proxies=proxy,
@@ -91,6 +96,10 @@ def findlinks_ahref(url, level):
 # scrape into other pages too
 discussions = findlinks_ahref(web_link3, 0)
 threads = findlinks_ahref(discussions[0], 1)
+
+##############################################################################
+
+############## scrape using available links and dump into dump.txt ##########
 
 
 postIds = []
@@ -159,16 +168,3 @@ for thread in threads:
         out.write(message.decode("utf-8"))
         out.write("\n\n\n")
     print(postBody[0])
-
-# //*[@id="post-441629"]
-
-# finds all links to threads in a given page
-# level 3: class : messageinfo primaryContent --> the first post
-# level 2: discussionlist
-# level 1: node forum level
-
-
-
-
-
-
