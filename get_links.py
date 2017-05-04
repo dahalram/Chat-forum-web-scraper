@@ -20,6 +20,18 @@ http_proxy  = "http://10.10.1.10:3128"
 https_proxy = "https://10.10.1.11:1080"
 ftp_proxy   = "ftp://10.10.1.10:3128"
 
+tag_class_pairs = {
+        "for discussions"                 :     ( 'li' ,    'node forum level', ""),
+        "for threads"                    :    ( 'li',    'discussionListItem visible', "threads"),
+        "for posts' body"                :    ( 'div',  'messageContent'),
+        "for posts' likes"               :   ( 'dl',    'brLikeReceived'),
+        "for liked by"                   :   ( 'div',  'publicControl'),
+        "for quoted text"                :    ( 'div',  'quote' ),
+        "for username"                   :   ('h3', 'userText'),
+        "for datetime"                   :   ('dl', 'brRightInfo timeStamp'),
+        "for pagenav"                    :   ('div', 'PageNav')
+    }
+
 def LoadProxy(pfile = PROXY_FILE):
     proxies = {}
     with open(pfile, 'r') as pf:
@@ -67,32 +79,28 @@ ahrefs = [["node forum level_", ""], ["discussionListItem visible", "threads"],
 # level 1 is the page of threads
 # level 2 is the page of actual posts
 def findlinks_ahref(url, level):
-    # print("Url is: ", url)
     next_level_links = []
     r = requests.get(url, proxies=proxy,
         params=params, headers=headers)
     response = BeautifulSoup(r.content, 'lxml')
     secs = response.findAll('li') # use response.findAll('span', {'class': 'items'})
-    # secs2 = response.findAll('li', {'class':})
-    c_ah = 0
-    for i in range(0, len(secs)):
-        strg = ""
-        cls = secs[i].get('class')
-        if cls:
-            for st in cls:
-                st += " "
-                strg += st
-            if ahrefs[level][0] in strg:
-                a = secs[i].find_all('a')
-                hrefs = [link.get('href') for link in a]
-                for link in hrefs:
-                    if link:
-                        if ahrefs[level][1] in link:
-                            next_level_links.append(JAMII_URL+link)
-
+    if level == 0:
+        tag = "for discussions"
+    else:
+        tag = "for threads"
+    secs = response.findAll(tag_class_pairs[tag][0], {'class': re.compile(tag_class_pairs[tag][1])})
+    print("Secs: ", secs)
+    for sec in secs:
+        a = sec.find_all('a')
+        hrefs = [link.get('href') for link in a]
+        for link in hrefs:
+            if link:
+                if tag_class_pairs[tag][2] in link:
+                    next_level_links.append(JAMII_URL+link)
+    
     # returns list with div elements
     other_pages=[]
-    pages = response.findAll('div', {'class':"PageNav"}) 
+    pages = response.findAll(tag_class_pairs["for pagenav"][0], {'class':re.compile(tag_class_pairs["for pagenav"][1])}) 
     for page in pages[:len(pages)-1]:
         a_s = page.find_all('a', {'href': re.compile("page-")})
         # get 'forums/great-thinkers.110/page-' portion of the href
@@ -109,6 +117,12 @@ def findlinks_ahref(url, level):
 #   manage formatting of posts in terms of likes received, author, replies ...
 #   before doing one big scrape using all discussions except only discussion[0]
 #   as well as other_pages
+
+# requirements next iteration:
+#   likes received, info about who liked, click to expand
+
+# file with just posts
+# file with metadata
 
 ##############################################################################
 
@@ -129,11 +143,77 @@ link_num = open('link_num.txt', 'a')
 
 discussions, _ = findlinks_ahref(JAMII_URL, 0)
 discussions = set(discussions)
+print("Discussions: ", discussions)
+
+def scrape(url, headers):
+    liked_by_users = []
+    r = requests.get(url, proxies=proxy,
+            params=params, headers=headers)
+    response = BeautifulSoup(r.content, 'lxml')
+    out.write(url + ':\n\n')
+    print("Scraping currently: ", url[36:])
+    for text in response.findAll('li'):
+        # print ("Text is: \n\n\n", text)
+        message = b''
+        # postid
+        postId = text.get('id')
+        postIds.append(postId)
+        # date time
+        datetime = ""
+        st = ""
+        try:
+            datetime = text.find(tag_class_pairs["for datetime"][0], {'class':tag_class_pairs["for datetime"][1]}).text
+        except:
+            pass
+        timeStamps.append(datetime)
+        # likes received
+        likeText = str(text.find(tag_class_pairs["for posts' body"][0], {'class': tag_class_pairs["for posts' body"][1]}))
+        likeText = likeText.split('<span>', 1)[-1]
+        likeText = likeText.split('</span>')[0]
+        likes.append(likeText)
+        try:
+            names = str(text.find(tag_class_pairs["for liked by"][0], {'class':tag_class_pairs["for liked by"][1]}).find_all('a', {'href':re.compile('posts')}))
+            try:
+                "href" in names.split(" ")[4]
+                href = names.split(" ")[4]
+            except:
+                href = names.split(" ")[3]
+                liked_by_users.extend(JAMII_URL+"/"+href)
+            # print('href: ', href)
+        except:
+            pass
+        
+        # Post body2
+        try:
+            message = text.find(tag_class_pairs["for posts' body"][0], {'class':tag_class_pairs["for posts' body"][1]}).text.encode('utf-8')
+        except:
+            pass
+        postBody.append(message)
+        # Quoted text
+        quotedText = ""
+        try:
+            quotedText = text.find(tag_class_pairs["for quoted text"][0], {'class':tag_class_pairs["for quoted text"][1]}).text
+        except:
+            pass
+        quotedTexts.append(quotedText)
+        # userID
+        userid = text.findAll('a')
+        # userID = userid.get("href")
+        # userName
+        username = str(text.find(tag_class_pairs["for username"][0], {'class':tag_class_pairs["for username"][1]}))
+        username = username.split()
+        out.write("\n")
+        st = str(postId) + " , " + str(datetime) +  " , " +message.decode("utf-8")
+        out.write(st)
+        #c += 1
 
 for diss in discussions:
     threads, other_pages = findlinks_ahref(diss, 1)
     threads = set(threads)
+    threads = sorted(threads)
     c = 1
+    # inside each thread, th is the actual 
+    # check for duplicates
     for th in threads:
         link_num.write(str(c) + " " + th)
         link_num.write('\n\n')
@@ -150,49 +230,8 @@ for diss in discussions:
             "Connection" : "close",  # another way to cover tracks
             "User-Agent" : ua
             }
+        scrape(th, headers)
 
-        r = requests.get(th, proxies=proxy,
-            params=params, headers=headers)
-        response = BeautifulSoup(r.content, 'lxml')
-        for text in response.findAll('li'):
-            message = b''
-            # postid
-            postId = text.get('id')
-            postIds.append(postId)
-            # date time
-            datetime = ""
-            try:
-                datetime = text.find('dl', {'class':'brRightInfo timeStamp'}).text
-            except:
-                pass
-            timeStamps.append(datetime)
-            # likes received
-            likeText = str(text.find('dl', {'class':'brLikeReceived'}))
-            likeText = likeText.split('<span>', 1)[-1]
-            likeText = likeText.split('</span>')[0]
-            likes.append(likeText)
-            # Post body
-            try:
-                message = text.find('div', {'class':'messageContent'}).text.encode('utf-8')
-            except:
-                pass
-            postBody.append(message)
-            # Quoted text
-            quotedText = ""
-            try:
-                quotedText = text.find('div', {'class':'quote'}).text
-            except:
-                pass
-            quotedTexts.append(quotedText)
-            # userID
-            userid = text.findAll('a')
-            # userID = userid.get("href")
-            # userName
-            username = str(text.find('h3', {'class':'userText'}))
-            username = username.split()
-            out.write("\n")
-            out.write(message.decode("utf-8"))
-            out.write("\n\n")
-            c += 1
-        # print(postBody[0])
+# url = "https://www.jamiiforums.com/threads/duru-za-siasa-us-chini-ya-d-j-trump.1187811/"
+# scrape(url, {})
 out.close()
