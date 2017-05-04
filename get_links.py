@@ -29,7 +29,8 @@ tag_class_pairs = {
         "for quoted text"                :    ( 'div',  'quote' ),
         "for username"                   :   ('h3', 'userText'),
         "for datetime"                   :   ('dl', 'brRightInfo timeStamp'),
-        "for pagenav"                    :   ('div', 'PageNav')
+        "for pagenav"                    :   ('div', 'PageNav'),
+        "for actual likers"              :   ('li', 'primaryContent memberListItem')
     }
 
 def LoadProxy(pfile = PROXY_FILE):
@@ -83,20 +84,26 @@ def findlinks_ahref(url, level):
     r = requests.get(url, proxies=proxy,
         params=params, headers=headers)
     response = BeautifulSoup(r.content, 'lxml')
-    secs = response.findAll('li') # use response.findAll('span', {'class': 'items'})
     if level == 0:
         tag = "for discussions"
     else:
         tag = "for threads"
-    secs = response.findAll(tag_class_pairs[tag][0], {'class': re.compile(tag_class_pairs[tag][1])})
-    print("Secs: ", secs)
-    for sec in secs:
-        a = sec.find_all('a')
-        hrefs = [link.get('href') for link in a]
-        for link in hrefs:
-            if link:
-                if tag_class_pairs[tag][2] in link:
-                    next_level_links.append(JAMII_URL+link)
+    secs = response.findAll(tag_class_pairs[tag][0]) # {'class': re.compile(tag_class_pairs[tag][1])})
+    # print("Secs: ", secs)
+    for i in range(0, len(secs)):
+        cls = secs[i].get('class')
+        st = ""
+        if cls:
+            for s in cls:
+                st += " "
+                st += s
+            if tag_class_pairs[tag][1] in st:
+                a = secs[i].find_all('a')
+                hrefs = [link.get('href') for link in a]
+                for link in hrefs:
+                    if link:
+                        if tag_class_pairs[tag][2] in link:
+                            next_level_links.append(JAMII_URL+link)
     
     # returns list with div elements
     other_pages=[]
@@ -145,6 +152,13 @@ discussions, _ = findlinks_ahref(JAMII_URL, 0)
 discussions = set(discussions)
 print("Discussions: ", discussions)
 
+def likedby(url):
+    r = requests.get(url, proxies = {}, 
+            params = {}, headers = {})
+    res = BeautifulSoup(r.content, 'lxml')
+    likers = res.find_all(tag_class_pairs['for actual likers'][0], {'class':tag_class_pairs['for actual likers'][1]})
+    print (likers)
+
 def scrape(url, headers):
     liked_by_users = []
     r = requests.get(url, proxies=proxy,
@@ -179,6 +193,7 @@ def scrape(url, headers):
             except:
                 href = names.split(" ")[3]
                 liked_by_users.extend(JAMII_URL+"/"+href)
+                liked_by_users = likedby(liked_by_users)
             # print('href: ', href)
         except:
             pass
