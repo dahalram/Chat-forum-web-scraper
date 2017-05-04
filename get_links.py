@@ -129,7 +129,7 @@ def findlinks_ahref(url, level):
 #   likes received, info about who liked, click to expand
 
 # file with just posts
-# file with metadata
+# file with metadata, what is metadata?
 
 ##############################################################################
 
@@ -150,17 +150,32 @@ link_num = open('link_num.txt', 'a')
 
 discussions, _ = findlinks_ahref(JAMII_URL, 0)
 discussions = set(discussions)
-print("Discussions: ", discussions)
+
+# need help with regular exprs, as in class: re.compile('xxx')
+
+def get_user_info(url):
+    pass
 
 def likedby(url):
+    users = []
+    userinfo = []
     r = requests.get(url, proxies = {}, 
             params = {}, headers = {})
     res = BeautifulSoup(r.content, 'lxml')
-    likers = res.find_all(tag_class_pairs['for actual likers'][0], {'class':tag_class_pairs['for actual likers'][1]})
-    print (likers)
+    likers = res.find_all(tag_class_pairs['for actual likers'][0], {'class': tag_class_pairs['for actual likers'][1]})
+    for liker in likers:
+        try:
+            usernames = liker.find_all('h3')
+            users = users + [username.text for username in usernames]
+        except:
+            continue
+        user_inf = liker.find('div', {'class':'userInfo'}).text
+        userinfo.append(user_inf)
+    return users, userinfo
 
 def scrape(url, headers):
     liked_by_users = []
+    users_info = []
     r = requests.get(url, proxies=proxy,
             params=params, headers=headers)
     response = BeautifulSoup(r.content, 'lxml')
@@ -187,14 +202,18 @@ def scrape(url, headers):
         likes.append(likeText)
         try:
             names = str(text.find(tag_class_pairs["for liked by"][0], {'class':tag_class_pairs["for liked by"][1]}).find_all('a', {'href':re.compile('posts')}))
+            # check if href is giving valid url
             try:
                 "href" in names.split(" ")[4]
                 href = names.split(" ")[4]
             except:
                 href = names.split(" ")[3]
-                liked_by_users.extend(JAMII_URL+"/"+href)
-                liked_by_users = likedby(liked_by_users)
-            # print('href: ', href)
+
+            url = JAMII_URL+"/"+href
+            print(url)
+            # why this doesn't work
+            liked_by_users, users_info = likedby(url)
+            print('usernames:\n{0}user_info:\n{1}'.format(liked_by_users, user_info))
         except:
             pass
         
@@ -249,4 +268,6 @@ for diss in discussions:
 
 # url = "https://www.jamiiforums.com/threads/duru-za-siasa-us-chini-ya-d-j-trump.1187811/"
 # scrape(url, {})
+# lis1, lis2 = likedby('https://www.jamiiforums.com/posts/19403808/likes')
+# print(lis1, lis2)
 out.close()
