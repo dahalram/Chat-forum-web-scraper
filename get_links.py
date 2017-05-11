@@ -189,6 +189,7 @@ def scrape(url, headers):
         # print ("Text is: \n\n\n", text)
         if c == 0:
             print(text)
+            c+=1
         message = b''
         # postid
         postId = text.get('id')
@@ -207,22 +208,14 @@ def scrape(url, headers):
         likeText = likeText.split('</span>')[0]
         likes.append(likeText)
         try:
-            name = text.find(tag_class_pairs["for liked by 2"][0], {
+            href = text.find(tag_class_pairs["for liked by 2"][0], {
                 'class':tag_class_pairs["for liked by 2"][1]})
-            print("Name is: ", name)
-            name = name.find('a')
-            print("Name is: ", name)
-            try:
-                "href" in names.split(" ")[4]
-                href = names.split(" ")[4]
-            except:
-                href = names.split(" ")[3]
-
-        # url = JAMII_URL+"/"+href
-        # print("URl is: ", url)
-        # # why this doesn't work
-        #liked_by_users, users_info = likedby(url)
-        #print('usernames:\n{0}user_info:\n{1}'.format(liked_by_users, user_info))
+            href = href.find('a', {'href': re.compile('posts')})
+            href = href.get('href')
+            print("href: ", href)
+            url = JAMII_URL+"/"+href
+            liked_by_users, users_info = likedby(url)
+            print('usernames:\n{0}user_info:\n{1}'.format(liked_by_users, user_info))
         
         except:
             print("Went into except")
