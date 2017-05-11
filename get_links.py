@@ -28,10 +28,11 @@ tag_class_pairs = {
         "for liked by"                   :   ( 'a',  'likeCount OverlayTrigger'),
         "for liked by 2"                 :   ( 'div', 'publicControls'),
         "for quoted text"                :    ( 'div',  'quote' ),
-        "for username"                   :   ('h3', 'userText'),
+        # "for username"                   :   ('h3', 'username'),
         "for datetime"                   :   ('dl', 'brRightInfo timeStamp'),
         "for pagenav"                    :   ('div', 'PageNav'),
         "for actual likers"              :   ('li', 'primaryContent memberListItem')
+        # "for actual likers"              :   ('h3', 'username')
     }
 
 def LoadProxy(pfile = PROXY_FILE):
@@ -138,6 +139,12 @@ def findlinks_ahref(url, level):
 
 ############## scrape using available links and dump into dump.txt ##########
 
+# for a post format:
+# time, date, username, userinfo, detail user info, post
+
+# cc is to count total number of posts
+
+
 postIds = []
 userIds = []
 timeStamps = []
@@ -147,6 +154,7 @@ quotedTexts = []
 # load proxy
 count = 0
 four = 0
+cc = 0
 
 out = open('dump.txt', 'a')
 link_num = open('link_num.txt', 'a')
@@ -159,7 +167,8 @@ discussions = set(discussions)
 def get_user_info(url):
     pass
 
-def likedby(url):
+def likedby(url, c):
+    c += 5
     users = []
     userinfo = []
     r = requests.get(url, proxies = {}, 
@@ -168,17 +177,19 @@ def likedby(url):
     likers = res.find_all(tag_class_pairs['for actual likers'][0], {'class': tag_class_pairs['for actual likers'][1]})
     for liker in likers:
         try:
-            usernames = liker.find_all('h3')
-            users = users + [username.text for username in usernames]
+            username = liker.find('h3').text
+            users.append(username)
+            user_inf = liker.find('div', {'class':'userInfo'}).text
+            userinfo.append(user_inf)
         except:
-            continue
-        user_inf = liker.find('div', {'class':'userInfo'}).text
-        userinfo.append(user_inf)
-    return users, userinfo
-
+            pass
+    print("C inside: ", c)
+    return [users, userinfo]
+    
 def scrape(url, headers):
-    liked_by_users = []
-    users_info = []
+    # liked_by_users = []
+    # users_info = []
+    global cc
     r = requests.get(url, proxies=proxy,
             params=params, headers=headers)
     response = BeautifulSoup(r.content, 'lxml')
@@ -186,10 +197,6 @@ def scrape(url, headers):
     print("Scraping currently: ", url[36:])
     c = 0
     for text in response.findAll('li'):
-        # print ("Text is: \n\n\n", text)
-        if c == 0:
-            print(text)
-            c+=1
         message = b''
         # postid
         postId = text.get('id')
@@ -207,19 +214,22 @@ def scrape(url, headers):
         likeText = likeText.split('<span>', 1)[-1]
         likeText = likeText.split('</span>')[0]
         likes.append(likeText)
-        try:
-            href = text.find(tag_class_pairs["for liked by 2"][0], {
-                'class':tag_class_pairs["for liked by 2"][1]})
-            href = href.find('a', {'href': re.compile('posts')})
-            href = href.get('href')
-            print("href: ", href)
-            url = JAMII_URL+"/"+href
-            liked_by_users, users_info = likedby(url)
-            print('usernames:\n{0}user_info:\n{1}'.format(liked_by_users, user_info))
-        
-        except:
-            print("Went into except")
-            pass
+        # try:
+        #     href = text.find(tag_class_pairs["for liked by 2"][0], {
+        #         'class':tag_class_pairs["for liked by 2"][1]})
+        #     href = href.find('a', {'href': re.compile('posts')})
+        #     href = href.get('href')
+        #     print("href: ", href)
+        #     url = JAMII_URL+href
+        #     print("URL: {0}\nc: {1}".format(url, c))
+        #     ret = likedby(url, c)
+        #     liked_by_users = ret[0]
+        #     users_info = ret[1]
+        #     print("Return stuff: ", ret)
+        #     print('usernames:\n{0}user_info:\n{1}'.format(liked_by_users, user_info))
+        # except:
+        #     print("Went into except")
+        #     pass
         
         # Post body2
         try:
@@ -238,11 +248,15 @@ def scrape(url, headers):
         userid = text.findAll('a')
         # userID = userid.get("href")
         # userName
-        username = str(text.find(tag_class_pairs["for username"][0], {'class':tag_class_pairs["for username"][1]}))
-        username = username.split()
-        out.write("\n")
-        st = str(postId) + " , " + str(datetime) +  " , " +message.decode("utf-8")
-        out.write(st)
+        # username = str(text.find(tag_class_pairs["for username"][0], {'class':tag_class_pairs["for username"][1]}))
+        # username = username.split()
+        if message != b'':
+            out.write("\n")
+            cc += 1
+            out.write(str(cc))
+            out.write("\n")
+            st = str(postId) + " , " + str(datetime) +  " , " +message.decode("utf-8")
+            out.write(st)
         #c += 1
 
 for diss in discussions:
@@ -271,5 +285,6 @@ for diss in discussions:
 
 # url = "https://www.jamiiforums.com/threads/duru-za-siasa-us-chini-ya-d-j-trump.1187811/"
 # scrape(url, {})
-# lis1, lis2 = likedby('https://www.jamiiforums.com/posts/19403808/likes')
+#lis1, lis2 = likedby('https://www.jamiiforums.com/posts/17005610/likes')
+#print(lis1, lis2)
 out.close()
