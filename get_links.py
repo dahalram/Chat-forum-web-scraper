@@ -25,7 +25,8 @@ tag_class_pairs = {
         "for threads"                    :    ( 'li',    'discussionListItem visible', "threads"),
         "for posts' body"                :    ( 'div',  'messageContent'),
         "for posts' likes"               :   ( 'dl',    'brLikeReceived'),
-        "for liked by"                   :   ( 'div',  'publicControl'),
+        "for liked by"                   :   ( 'a',  'likeCount OverlayTrigger'),
+        "for liked by 2"                 :   ( 'div', 'publicControls'),
         "for quoted text"                :    ( 'div',  'quote' ),
         "for username"                   :   ('h3', 'userText'),
         "for datetime"                   :   ('dl', 'brRightInfo timeStamp'),
@@ -39,7 +40,6 @@ def LoadProxy(pfile = PROXY_FILE):
         for p in pf.readlines():
             for ip in p.split(","):
                 proxies["http"] = "http://" + ip
-    #print(proxies)
     return proxies
 
 def LoadUserAgents(uafile=USER_AGENTS_FILE):
@@ -89,7 +89,6 @@ def findlinks_ahref(url, level):
     else:
         tag = "for threads"
     secs = response.findAll(tag_class_pairs[tag][0]) # {'class': re.compile(tag_class_pairs[tag][1])})
-    # print("Secs: ", secs)
     for i in range(0, len(secs)):
         cls = secs[i].get('class')
         st = ""
@@ -125,11 +124,15 @@ def findlinks_ahref(url, level):
 #   before doing one big scrape using all discussions except only discussion[0]
 #   as well as other_pages
 
-# requirements next iteration:
-#   likes received, info about who liked, click to expand
 
-# file with just posts
-# file with metadata, what is metadata?
+# file with just posts  ->  postid and body of the post (no quoted text)
+# file with metadata, 
+
+# TO-DO (written on 05/04/2017)
+# what is metadata? -->  for each box -> 
+#           postid, userid of the poster, thread, threadid, time, who liked it, how many likes, 
+#           which post was quoted (look at hoover)
+#       network diagram  could be built
 
 ##############################################################################
 
@@ -181,8 +184,11 @@ def scrape(url, headers):
     response = BeautifulSoup(r.content, 'lxml')
     out.write(url + ':\n\n')
     print("Scraping currently: ", url[36:])
+    c = 0
     for text in response.findAll('li'):
         # print ("Text is: \n\n\n", text)
+        if c == 0:
+            print(text)
         message = b''
         # postid
         postId = text.get('id')
@@ -201,20 +207,25 @@ def scrape(url, headers):
         likeText = likeText.split('</span>')[0]
         likes.append(likeText)
         try:
-            names = str(text.find(tag_class_pairs["for liked by"][0], {'class':tag_class_pairs["for liked by"][1]}).find_all('a', {'href':re.compile('posts')}))
-            # check if href is giving valid url
+            name = text.find(tag_class_pairs["for liked by 2"][0], {
+                'class':tag_class_pairs["for liked by 2"][1]})
+            print("Name is: ", name)
+            name = name.find('a')
+            print("Name is: ", name)
             try:
                 "href" in names.split(" ")[4]
                 href = names.split(" ")[4]
             except:
                 href = names.split(" ")[3]
 
-            url = JAMII_URL+"/"+href
-            print(url)
-            # why this doesn't work
-            liked_by_users, users_info = likedby(url)
-            print('usernames:\n{0}user_info:\n{1}'.format(liked_by_users, user_info))
+        # url = JAMII_URL+"/"+href
+        # print("URl is: ", url)
+        # # why this doesn't work
+        #liked_by_users, users_info = likedby(url)
+        #print('usernames:\n{0}user_info:\n{1}'.format(liked_by_users, user_info))
+        
         except:
+            print("Went into except")
             pass
         
         # Post body2
@@ -245,11 +256,10 @@ for diss in discussions:
     threads, other_pages = findlinks_ahref(diss, 1)
     threads = set(threads)
     threads = sorted(threads)
-    c = 1
     # inside each thread, th is the actual 
     # check for duplicates
     for th in threads:
-        link_num.write(str(c) + " " + th)
+        link_num.write(str(count) + " " + th)
         link_num.write('\n\n')
         if four == 4:
             time.sleep(10*random.random())
@@ -269,5 +279,4 @@ for diss in discussions:
 # url = "https://www.jamiiforums.com/threads/duru-za-siasa-us-chini-ya-d-j-trump.1187811/"
 # scrape(url, {})
 # lis1, lis2 = likedby('https://www.jamiiforums.com/posts/19403808/likes')
-# print(lis1, lis2)
 out.close()
